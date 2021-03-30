@@ -10,12 +10,21 @@
 ...
 2.  Rules of Usage
 ...
-3)  You acknowledge and confirm that you may not, either directly or indirectly, do or attempt to do any of the following action with respect to any or all of the miHoYo Services:
+3)  You acknowledge and confirm that you may not, either directly or indirectly, do or
+attempt to do any of the following action with respect to any or all of the miHoYo Services:
 ...
-iii.  Infringe contractual rights, personal and property rights, intellectual property rights and other rights and interests (including the rights of privacy, publicity or trade secret) of miHoYo or third-parties;
-iv.  Develop, use or distribute any software, script code, plug-in unit, programs or applications that may cause an unfair competitive advantage;
+iii.  Infringe contractual rights, personal and property rights, intellectual property
+rights and other rights and interests (including the rights of privacy, publicity or trade
+secret) of miHoYo or third-parties;
+iv.  Develop, use or distribute any software, script code, plug-in unit, programs or
+applications that may cause an unfair competitive advantage;
 ...
-viii.  Use illegal or inappropriate methods that may interrupt the operation of or otherwise exploit any of the miHoYo Services without authorization, including but not limited to extracting source code, hacking, cracking, distributing counterfeit software, complaining of false information, uploading or transmitting files (or attempting to do so) that contain viruses, Trojan horses, worms, time bombs, corrupted files or other unauthorized programs;
+viii.  Use illegal or inappropriate methods that may interrupt the operation of or
+otherwise exploit any of the miHoYo Services without authorization, including but not
+limited to extracting source code, hacking, cracking, distributing counterfeit software,
+complaining of false information, uploading or transmitting files (or attempting to do so)
+that contain viruses, Trojan horses, worms, time bombs, corrupted files or other
+unauthorized programs;
 ...
 x.  Allow or assist any third-parties to do any of the above.
 ...
@@ -25,16 +34,26 @@ x.  Allow or assist any third-parties to do any of the above.
 ...
 iii.  use of cheating programs or other malicious game programs;
 ...
-3)  We reserve the right, but are not obligated, to attention or be involved in disputes between users. Depending on the relevant situation, miHoYo may take action, including but not limited to, sending a warning, blocking communications, suspending, off-lining, banning or terminating your Account temporarily or permanently, blocking login, deleting game files or otherwise take actions in our sole discretion. We reserve and maintain the final rights to interpret and take actions according to relevant circumstances of your inappropriate behaviors. If your rights are violated by other users, we will assist you in providing the necessary materials to defend your rights.
+3)  We reserve the right, but are not obligated, to attention or be involved in disputes
+between users. Depending on the relevant situation, miHoYo may take action, including but
+not limited to, sending a warning, blocking communications, suspending, off-lining, banning
+or terminating your Account temporarily or permanently, blocking login, deleting game files
+or otherwise take actions in our sole discretion. We reserve and maintain the final rights
+to interpret and take actions according to relevant circumstances of your inappropriate
+behaviors. If your rights are violated by other users, we will assist you in providing the
+necessary materials to defend your rights.
 ...
 ```
 * in the Genshin Impact Performance function disclaimer is specified play your personal song or have relevant right to play a song as follows (do it at your own risk):
 ```
-When using the Performace function, make sure that you use an original composition or have the relevant rights to use the melody you are playing in order to avoid harming the rights of any third parties and to avoid any actions in breach of or incompatible with our Terms of Service. Otherwise we may have to your use of this function
+When using the Performace function, make sure that you use an original composition or have
+the relevant rights to use the melody you are playing in order to avoid harming the rights
+of any third parties and to avoid any actions in breach of or incompatible with our Terms
+of Service. Otherwise we may have to your use of this function
 ```
 ---
 ## Requirements
-######  this script require ***Python*** and ***ffmpeg*** to be installed and function properly to execute 
+######  this script require ***Python*** and ***ffmpeg*** to be installed and function properly to execute
 ---
 ## Steps
 * import your songs (needed to be done once for every song)

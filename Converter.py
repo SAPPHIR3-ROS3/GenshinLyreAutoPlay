@@ -25,16 +25,16 @@ def IsAdmin():
         return False
 
 if __name__ == '__main__':
-    # Application = App()
-    # if IsAdmin():
-    #     Application.title('GenshinImpactLyreAutoplay')
-    #     Application.geometry('+800+300')
-    #     Application.mainloop()
-    # else:
-    #     Application.title('Warning')
-    #     Application.geometry('+800+300')
-    #     Warning = Label(Application, text = 'Restart this program with', font = ('Courier', 24))
-    #     WarningBottom = Label(Application, text = 'Admin Proviledges', font = ('Courier',24))
-    #     Warning.pack()
-    #     WarningBottom.pack()
-    #     Application.mainloop()
+    Application = App()
+    if IsAdmin():
+        Application.title('GenshinImpactLyreAutoplay')
+        Application.geometry('+800+300')
+        Application.mainloop()
+    else:
+        Application.title('Warning')
+        Application.geometry('+800+300')
+        Warning = Label(Application, text = 'Restart this program with', font = ('Courier', 24))
+        WarningBottom = Label(Application, text = 'Admin Proviledges', font = ('Courier',24))
+        Warning.pack()
+        WarningBottom.pack()
+        Application.mainloop()

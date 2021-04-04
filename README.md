@@ -57,9 +57,8 @@ of Service. Otherwise we may have to your use of this function
 ---
 ## Steps
 * import your songs (needed to be done once for every song)
-  * Drop your songs in `/Songs` folder
-  * the songs in folder will be converted in .wav (better sound translation)
-  * the .wav files will be converted in .mid (MIDI files will give the instructions to play the songs)
+  * (you can convert your songs to MIDI [Here](https://www.ofoct.com/audio-converter/convert-wav-or-mp3-ogg-aac-wma-to-midi.html))
+  * Drop your songs (MIDI files) in `/Songs` folder
   * the MIDI files will be mapped to Genshin Impact Performace Mode (Lyre) compatible keys sequences
   * the MIDI files will be translated in C Major in order to remove (most of) the notes alterations (A#, C# ecc.)
   * the keys sequence will exported and saved in `/MappedSongs`

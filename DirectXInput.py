@@ -8,12 +8,12 @@ from ctypes import Union as SUnion
 from ctypes import windll as WinDLL
 from time import sleep as Sleep
 
-SendInput = WinDLL.user32.SendInput
+SendInput = WinDLL.user32.SendInput #Win32api input command
 
-PUL = Ptr(ULong)
+PUL = Ptr(ULong) #Pointer type
 
 
-class KeyBdInput(Struct):
+class KeyboardInput(Struct): #C Struct with necessary field to send input
     _fields_ =\
     [
         ("wVk", UShort),
@@ -23,31 +23,31 @@ class KeyBdInput(Struct):
         ("dwExtraInfo", PUL)
     ]
 
-class ReqInput(SUnion):
-    _fields_ = [("ki", KeyBdInput)]
+class ReqInput(SUnion): #C Struct for input request from normal to DirectX input
+    _fields_ = [("ki", KeyboardInput)]
 
 
-class Input(Struct):
+class Input(Struct): #C Struct for DirectX Input
     _fields_ =\
     [
         ("type", ULong),
         ("ii", ReqInput)
     ]
 
-def PressKey(hexKeyCode):
-    extra = ULong(0)
-    InputRequest = ReqInput()
-    InputRequest.ki = KeyBdInput(0, hexKeyCode, 0x0008, 0, Pointer(extra))
-    RealInput = Input(ULong(1), InputRequest)
-    SendInput(1, Pointer(RealInput), Sizeof(RealInput))
+def PressKey(hexKeyCode): #this function send the input of key press
+    Extra = ULong(0) #pointer of a number to fill the input
+    InputRequest = ReqInput() #normal input request creation
+    InputRequest.ki = KeyboardInput(0, hexKeyCode, 0x0008, 0, Pointer(Extra)) #setting the Keyboard input attribute field properly
+    RealInput = Input(ULong(1), InputRequest) # input conversion
+    SendInput(1, Pointer(RealInput), Sizeof(RealInput)) #sending the input
 
 
-def ReleaseKey(hexKeyCode):
-    extra = ULong(0)
-    InputRequest = ReqInput()
-    InputRequest.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, Pointer(extra))
-    RealInput = Input(ULong(1), InputRequest)
-    SendInput(1, Pointer(RealInput), Sizeof(RealInput))
+def ReleaseKey(hexKeyCode): # this function send the input of key release
+    Extra = ULong(0) #pointer of a number to fill the input
+    InputRequest = ReqInput() #normal input request creation
+    InputRequest.ki = KeyboardInput(0, hexKeyCode, 0x0008 | 0x0002, 0, Pointer(Extra)) #setting the Keyboard input attribute field properly
+    RealInput = Input(ULong(1), InputRequest) #input conversion
+    SendInput(1, Pointer(RealInput), Sizeof(RealInput)) #sending the input
 
 if __name__ == '__main__':
     while (True):

@@ -144,7 +144,7 @@ def GetMostActiveOctave(ClassifiedStreamPart = [], Octaves = []): #this function
 
     return MostActive
 
-def CutStream(ClassifiedStreamPart = [], Octaves = [], MostActiveOctave = int()): #this function cut the least active octaves of 
+def CutStream(ClassifiedStreamPart = [], Octaves = [], MostActiveOctave = int()): #this function cut the least active octaves of the stream
     Octaves = [Octave for Octave in range(min(Octaves), max(Octaves) + 1)] #generating actual octave range from min to max (sorted)
     CuttedOctaves = [] #list with the ***most*** active octaves of stream part
 

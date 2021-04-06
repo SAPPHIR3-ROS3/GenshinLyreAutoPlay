@@ -144,6 +144,33 @@ def GetMostActiveOctave(ClassifiedStreamPart = [], Octaves = []): #this function
 
     return MostActive
 
+def CutStream(ClassifiedStreamPart = [], Octaves = [], MostActiveOctave = int()): #this function cut the least active octaves of 
+    Octaves = [Octave for Octave in range(min(Octaves), max(Octaves) + 1)] #generating actual octave range from min to max (sorted)
+    CuttedOctaves = [] #list with the ***most*** active octaves of stream part
+
+    if MostActiveOctave == max(Octaves): #checking if the most active octave is in last pace of the list
+        CuttedOctaves = Octaves[-3 :] #setting the range as last 3
+    elif MostActiveOctave == min(Octaves): #checking if the most active octave is in first place
+        CuttedOctaves = Octaves[: 3] #setting the range a first 2
+    else: #the most active octave is in the middle
+        CuttedOctaves = Octaves[(MostActiveOctave - 1) - 1 : (MostActiveOctave - 1) + 2] # setting the range as 1 before and 2 after
+
+    for Element in ClassifiedStreamPart[:]: #for loop for every note in a copy of the stream (for normal iteration)
+        if Element['Type'] == 'Note': #check if the element is a note
+            if not Element['Octave'] in CuttedOctaves: #checking if the octave of the note is in the selected range
+                ClassifiedStreamPart.remove(Element) #removing the element for the real stream part
+        elif Element['Type'] == 'Chord': #check if the element is a chord
+            for Item in Element['Octave'][:]: #for loop for every note of a copy of the chord
+                if not Item in CuttedOctaves: #checking if the octave of the note is in the selected range
+                    Index = Element['Octave'].index(Item) #getting the index of octave and note
+                    Element['Octave'].pop(Index) #popping the octave by index
+                    Element['Sound'].pop(Index) #popping the note by index
+
+            if len(Element['Sound']) == 0: #checking if (after the loop) the chord has no notes
+                ClassifiedStreamPart.remove(Element) #romoving the empty chord
+
+    return ClassifiedStreamPart
+
 if __name__ == '__main__':
     Stream = ParseMIDI('Songs/Necrofantasia 6.mid')
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]

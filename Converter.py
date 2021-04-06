@@ -27,7 +27,8 @@ def IsAdmin(): #this function check if the script as Admin Priviledges
 
 if __name__ == '__main__':
     Application = App() #app initialization
-    if IsAdmin(): #chekc of Admin Priviledges
+
+    if IsAdmin(): #check of Admin Priviledges
         Application.title('GenshinImpactLyreAutoplay')
         Application.geometry('+800+300')
     else:
@@ -37,4 +38,4 @@ if __name__ == '__main__':
         WarningBottom = Label(Application, text = 'Admin Proviledges', font = ('Courier',24))
         Warning.pack()
         WarningBottom.pack()
-    Application.mainloop()
+    Application.mainloop() 

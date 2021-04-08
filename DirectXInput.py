@@ -1,3 +1,5 @@
+from ctypes import c_long as Long
+from ctypes import c_short as Short
 from ctypes import c_ulong as ULong
 from ctypes import c_ushort as UShort
 from ctypes import pointer as Pointer
@@ -9,12 +11,10 @@ from ctypes import windll as WinDLL
 from time import sleep as Sleep
 
 SendInput = WinDLL.user32.SendInput #Win32api input command
-
 PUL = Ptr(ULong) #Pointer type
 
-
-class KeyboardInput(Struct): #C Struct with necessary field to send input
-    _fields_ =\
+class KeyboardInput(Struct): #C Struct with necessary field to send input as Keyboard
+    _fields_ = \
     [
         ("wVk", UShort),
         ("wScan", UShort),
@@ -23,35 +23,64 @@ class KeyboardInput(Struct): #C Struct with necessary field to send input
         ("dwExtraInfo", PUL)
     ]
 
-class ReqInput(SUnion): #C Struct for input request from normal to DirectX input
-    _fields_ = [("ki", KeyboardInput)]
+class HardwareInput(Struct):#C Struct with necessary field to send input as hardware
+    _fields_ =\
+    [
+        ("uMsg", ULong),
+        ("wParamL", Short),
+        ("wParamH", UShort)
+    ]
 
+class MouseInput(Struct): #C Struct with necessary field to send input as mouse #this class is necessary otherwise input won't be registered as valid
+    _fields_ =\
+    [
+        ("dx", Long),
+        ("dy", Long),
+        ("mouseData", ULong),
+        ("dwFlags", ULong),
+        ("time", ULong),
+        ("dwExtraInfo", PUL)
+    ]
+
+class ReqInput(SUnion): #C Struct for input request from normal to DirectX input
+    _fields_ =\
+    [
+        ("InputKeyboard", KeyboardInput),
+        ("InputMouse", MouseInput),
+        ("InputHardWare", HardwareInput)
+    ]
 
 class Input(Struct): #C Struct for DirectX Input
     _fields_ =\
     [
         ("type", ULong),
-        ("ii", ReqInput)
+        ("RequestInput", ReqInput)
     ]
 
-def PressKey(hexKeyCode): #this function send the input of key press
-    Extra = ULong(0) #pointer of a number to fill the input
+def PressKey(HexKeyCode): #this function send the input of key press
+    FillInput = ULong(0) #pointer of a number to fill the input
     InputRequest = ReqInput() #normal input request creation
-    InputRequest.ki = KeyboardInput(0, hexKeyCode, 0x0008, 0, Pointer(Extra)) #setting the Keyboard input attribute field properly
-    RealInput = Input(ULong(1), InputRequest) # input conversion
-    SendInput(1, Pointer(RealInput), Sizeof(RealInput)) #sending the input
+    InputRequest.InputKeyboard = KeyboardInput(0, HexKeyCode, 0x0008, 0, Pointer(FillInput)) #setting the Keyboard input attribute field properly
+    DirectInput = Input(ULong(1), InputRequest) # input conversion
+    SendInput(1, Pointer(DirectInput), Sizeof(DirectInput)) #sending the input for pressing the key
 
 
-def ReleaseKey(hexKeyCode): # this function send the input of key release
-    Extra = ULong(0) #pointer of a number to fill the input
+def ReleaseKey(HexKeyCode):
+    FillInput = ULong(0) #pointer of a number to fill the input
     InputRequest = ReqInput() #normal input request creation
-    InputRequest.ki = KeyboardInput(0, hexKeyCode, 0x0008 | 0x0002, 0, Pointer(Extra)) #setting the Keyboard input attribute field properly
-    RealInput = Input(ULong(1), InputRequest) #input conversion
-    SendInput(1, Pointer(RealInput), Sizeof(RealInput)) #sending the input
+    InputRequest.InputKeyboard = KeyboardInput(0, HexKeyCode, 0x0008 | 0x0002, 0, Pointer(FillInput)) #setting the Keyboard input attribute field properly
+    DirectInput = Input(ULong(1), InputRequest) # input conversion
+    SendInput(1, Pointer(DirectInput), Sizeof(DirectInput)) #sending the input for releasing the key
 
 if __name__ == '__main__':
-    while (True):
+    for i in range(3):
+        print(3 - i)
+        Sleep(1)
+
+    for i in range(3):
         PressKey(0x11)
+        print('key pressed')
         Sleep(1)
         ReleaseKey(0x11)
+        print('key released')
         Sleep(1)

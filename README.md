@@ -64,7 +64,7 @@ Otherwise we may have to your use of this function
   * all remaining alteration will be fixed (there are 2 method of fixing eventual remaining alteration):
     * approximation to the closest semitone (A- will be A, F# will be F)(they are different in MIDI files)
     * approximation to the upper semitone (ex.: C# will be D)
-  * the keys sequence will exported and saved in `/MappedSongs`
+  * the keys sequence will exported and saved in `/MappedSongs`  
 ```
 ***IMPORTANT NOTE***
 DO NOT IMPORT ANY COMPILED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND HARM

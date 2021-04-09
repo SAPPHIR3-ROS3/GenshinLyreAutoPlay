@@ -56,7 +56,7 @@ Otherwise we may have to your use of this function
 ## Requirements
 ######  this script require ***Python*** (to run the scripts) and to be installed and function properly to execute
 ---
-## Steps
+##  Instructions
 * import your songs (needed to be done once for every song)
   * Drop your songs (MIDI files) in `/Songs` folder
   * the MIDI files will be mapped to Genshin Impact Performace Mode (Lyre) compatible keys sequences

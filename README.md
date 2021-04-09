@@ -44,12 +44,13 @@ behaviors. If your rights are violated by other users, we will assist you in pro
 necessary materials to defend your rights.
 ...
 ```
-* in the Genshin Impact Performance function disclaimer is specified play your personal song or have relevant right to play a song as follows (do it at your own risk):
+* in the Genshin Impact Performance function disclaimer is specified play your personal song or have relevant right
+to play a song as follows (do it at your own risk):
 ```
-When using the Performace function, make sure that you use an original composition or have
-the relevant rights to use the melody you are playing in order to avoid harming the rights
-of any third parties and to avoid any actions in breach of or incompatible with our Terms
-of Service. Otherwise we may have to your use of this function
+When using the Performace function, make sure that you use an original composition or have the
+relevant rights to use the melody you are playing in order to avoid harming the rights of any
+third parties and to avoid any actions in breach of or incompatible with our Terms of Service.
+Otherwise we may have to your use of this function
 ```
 ---
 ## Requirements
@@ -66,8 +67,8 @@ of Service. Otherwise we may have to your use of this function
   * the keys sequence will exported and saved in `/MappedSongs`
     ```
     ***IMPORTANT NOTE***
-    DO NOT IMPORT ANY COMPILED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND HARM YOU
-    ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED FILE
+    DO NOT IMPORT ANY COMPILED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND HARM
+    YOU, ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED FILE
     ```
 * play the imported songs
   * open Genshin Impact

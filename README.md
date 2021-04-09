@@ -53,14 +53,22 @@ of Service. Otherwise we may have to your use of this function
 ```
 ---
 ## Requirements
-######  this script require ***Python*** and ***ffmpeg*** to be installed and function properly to execute
+######  this script require ***Python*** (to run the scripts) and to be installed and function properly to execute
 ---
 ## Steps
 * import your songs (needed to be done once for every song)
   * Drop your songs (MIDI files) in `/Songs` folder
   * the MIDI files will be mapped to Genshin Impact Performace Mode (Lyre) compatible keys sequences
   * the MIDI files will be translated in C Major in order to remove (most of) the notes alterations (A#, C# ecc.)
+  * all remaining alteration will be fixed (there are 2 method of fixing eventual remaining alteration):
+    * approximation to the closest semitone (A- will be A, F# will be F)(they are different in MIDI files)
+    * approximation to the upper semitone (ex.: C# will be D)
   * the keys sequence will exported and saved in `/MappedSongs`
+    ```
+    ***IMPORTANT NOTE***
+    DO NOT IMPORT ANY COMPILED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND HARM YOU
+    ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED FILE
+    ```
 * play the imported songs
   * open Genshin Impact
   * go on Performance function

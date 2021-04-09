@@ -65,11 +65,11 @@ Otherwise we may have to your use of this function
     * approximation to the closest semitone (A- will be A, F# will be F)(they are different in MIDI files)
     * approximation to the upper semitone (ex.: C# will be D)
   * the keys sequence will exported and saved in `/MappedSongs`
-    ```
-    ***IMPORTANT NOTE***
-    DO NOT IMPORT ANY COMPILED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND HARM
-    YOU, ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED FILE
-    ```
+```
+***IMPORTANT NOTE***
+DO NOT IMPORT ANY COMPILED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND HARM
+YOU, ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED FILE
+```
 * play the imported songs
   * open Genshin Impact
   * go on Performance function

@@ -231,6 +231,17 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
         Data = Dumps(ClassifiedStream,protocol = HighestProtocol)
         OutputFile.write(Data)
 
+def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
+    Stream = ParseMIDI('Songs/' + FileName)
+    OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
+    ComputedStream = [ClassifyElements(SubStream) for SubStream in Stream]
+    Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
+    MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
+    CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
+    CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
+    ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
+    CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox)
+
 if __name__ == '__main__':
     Stream = ParseMIDI('Songs/Necrofantasia 6.mid')
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]

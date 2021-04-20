@@ -3,7 +3,10 @@ from ctypes import windll as WinDLL
 from DirectXInput import PressKey
 from DirectXInput import ReleaseKey
 from MIDIInterface import Compile
+from multiprocessing import Lock
 from multiprocessing import Manager
+from multiprocessing import Pool
+from multiprocessing import Process
 from os import listdir as DirList
 from pickle import load as Load
 from random import randint as Rand
@@ -40,32 +43,77 @@ def IsAdmin(): #this function check if the script as Admin Priviledges
     except:
         return False # if the user is not admin an exception will be thrown and catched
 
-class ScrollableFrame(Page):
-    def __init__(self, Parent, *args, **kwargs):
-        super().__init__(Parent, *args, **kwargs)
-        FullFrame = Canvas(self)
-        SideBar = SBar(self, orient="vertical", command=FullFrame.yview)
-        self.ViewFrame = Page(FullFrame)
-        self.ItemList = dict()
-        self.ViewFrame.bind( "<Configure>", lambda Event: FullFrame.configure(scrollregion = FullFrame.bbox("all")))
-        FullFrame.create_window((0, 0), window=self.ViewFrame, anchor="nw")
-        FullFrame.configure(yscrollcommand=SideBar.set)
-        FullFrame.pack(side="left", fill="both", expand=True)
-        SideBar.pack(side="right", fill="y")
+def PlayPart(Part = [], Locks = dict()): # funtion to play MIDI track (multiprocessing)
+    for Element in Part:
+        if Element['Type'] == 'Note': #check if the element is a note
+            Note = Element['Sound'] + str(Element['Octave']) #full note
+            Key = DXCodes[Notes[Note]] #key to press binded to the note
+            Duration = Element['Duration'] #element duration in seconds
+            Fraction = Duration / 10 #fraction of duration (loop porpuses)
 
-    def Add(self, ItemName, Item, *args, **kwargs):
-        if ItemName in ItemList:
-            raise KeyError('key already exists in the dictionary, try using a different value for parameter ItemName instead of ' + ItemName +
-            ', instead if you want to remove an item use self.Remove(ItemName)')
-        else:
-            self.ItemList[ItemName] = Item(self.ViewFrame, *args, **kwargs)
-            self.ItemList[ItemName].pack()
+            if Locks[Note].locked(): #check id the resource is not locked by other processes
+                while Locks[Note].locked() and Duration > Fraction: #while the note can not be played and can still be played
+                    Sleep(Fraction) #sleep a fraction of the duration to check later in time id the resource is free
+                    Duration -= Fraction #remove the fraction from the total duration
 
-    def Remove(self, ItemName):
-        if ItemName in ItemList:
-            self.ItemList.remove(ItemName)
-        else:
-            raise KeyError('key does not exists in the dictionary')
+                if not Locks[Note].locked() and Duration > Fraction: #check the resource is available and has still sense play it
+                    Locks[Note].acquire() #lock the resource for other processes
+                    PressKey(Key) #press the key binded to the element
+                    Sleep(Duration) #wait the (partial) duration of the element
+                    Duration = 0 #the note is played and the duration is not needed anymore
+                    ReleaseKey(Key) #release the key binded to the element
+                    Locks[Note].release() #unlock the resource for other processes
+
+                else: #check if it has no more sense to be played
+                    Sleep(Duration) #sleep the remaining duration of the element
+            else: #the resource is available right away
+                Locks[Note].acquire() #lock the resource for other processes
+                PressKey(Key) #press the key binded to the element
+                Sleep(Duration) #wait the duration of the element
+                ReleaseKey(Key) #release the key binded to the element
+                Locks[Note].release() #unlock the resource for other processes
+
+        if Element['Type'] == 'Chord': #check if the element is a chord
+            Chord = [Note + str(Octave) for Note, Octave in zip(Element['Sound'], Element['Octave'])] #full chord
+            Keys = [DXCodes[Notes[Note]] for Note in Chord] #keys to press binded to the chord
+            Duration = Element['Duration'] #element duration in seconds
+            Fraction = Duration / 10 #fraction of duration (loop porpuses)
+
+            if all([Locks[Note].locked() for Note in Chord]): #check if all the resources not locked by other processes
+                while not all(list([Locks[Note].locked() for Note in Chord])) and Duration > Fraction: #while the note can not be played and can still be played
+                    Sleep(Fraction) #sleep a fraction of the duration to check later in time id the resource is free
+                    Duration -= Fraction #remove the fraction from the total duration
+
+                if all([not Locks[Note].locked() for Note in Chord]) and Duration > Fraction: #while the note can not be played and can still be played
+                    for Note in Chord: #for loop for every note of the chord
+                        Locks[Note].aquire() #lock the resource for other processes
+                    for Key in Keys: #for loop for every key that need to be pressed
+                        PressKey(Key) #press the key binded to the element
+
+                    Sleep(Duration) #wait the (partial) duration of the element
+
+                    for Key, Note in zip(Keys, Chord):
+                        ReleaseKey(Key) #release the key binded to the element
+                        Locked[Note].release() #unlock the resource for other processes
+
+                else: #check if it has no more sense to be played
+                    Sleep(Duration) #sleep the remaining duration of the element
+            else: #the resources are available right away
+                for Note in Chord: #for loop for evry note of the chord
+                    Locks[Note].aquire() #lock the resource for other processes
+
+                for Key in Keys:
+                    PressKey(Element) #press the key binded to the element
+
+                Sleep(Duration) #wait the duration of the element
+
+                for Element in Unlocked:
+                    ReleaseKey(Element) #release the key binded to the element
+                    Locked[Element].release() #unlock the resource for other processes
+
+        if Element['Type'] == 'Rest': #check if the element is a rest
+            Duration = Element['Duration'] #element duration in seconds
+            Sleep(Duration) #wait the (partial) duration of the element
 
 class Home(TkPage):
     Name = 'Home' #name of the class (attributes)
@@ -75,7 +123,7 @@ class Home(TkPage):
         super().__init__(Parent, *args, **kwargs) #constructor of super class
 
         self.Songs = [Song.replace('.mid', '') for Song in DirList('Songs') if Song.endswith('.mid')] #mappable songs
-        self.MappedSongs = [Song.replace('.cmid', '') for Song in DirList('MappedSongs') if Song.endswith('.cmid')] #mapped and compiled song
+        self.MappedSongs = [Song for Song in DirList('MappedSongs') if Song.endswith('.cmid')] #mapped and compiled song
 
         TopLabel = Label(self, text = 'Genshin Lyre Player', font= Home.Font(24), bd = 10) #top label with a title for the page
         TopLabel.place(anchor= 'n', relx= 0.5, rely = 0.015, relwidth = 1, relheight=0.15) #placing the label
@@ -99,7 +147,7 @@ class Home(TkPage):
         Play = Button\
         (
             self,
-            image = PlayLogo,
+            text = 'Play',
             command = lambda : self.Play()
         )#button to play the song selected
         Play.image = PlayLogo ##########
@@ -109,7 +157,7 @@ class Home(TkPage):
         Pause = Button\
         (
             self,
-            image = PauseLogo,
+            text = 'Pause',
             command = lambda : self.Pause()
         ) #button to pause a song
         Pause.place(anchor= 'nw', relx= 0.505, rely = 0.71, relwidth = 0.2, relheight = 0.22) #placing the button
@@ -121,114 +169,33 @@ class Home(TkPage):
             self.ItemList.insert(self.MappedSongs.index(Item), Item) #index the song in the item list
 
     def Play(self):
-        Song = self.ItemList.get('active')
-        with open('Mapped/' + Song, 'rb') as InputFile:
+        Song = self.ItemList.get('active') #getting the selected song from the list
+
+        for i in range(5): #countdown
+            print(5 - i)
+            Sleep(1)
+
+        with open('MappedSongs/' + Song, 'rb') as InputFile: #opening the compiled midi fil
             File = Load(InputFile)
 
-        RM = Manager() #locks mannager
+        RM = Manager()
         KeyLocks =\
         {
-            'q' : RM.Lock(), 'w' : RM.Lock(), 'e' : RM.Lock(), 'r' : RM.Lock(), 't' : RM.Lock(), 'y' : RM.Lock(), 'u' : RM.Lock(),
-            'a' : RM.Lock(), 's' : RM.Lock(), 'd' : RM.Lock(),  'f' : RM.Lock(), 'g' : RM.Lock(), 'h' : RM.Lock(), 'j' : RM.Lock(),
-            'z' : RM.Lock(), 'x' : RM.Lock(), 'c' : RM.Lock(), 'v' : RM.Lock(), 'b' : RM.Lock(), 'n' : RM.Lock(), 'm' : RM.Lock(),
+            'C3' : RM.Lock(), 'D3' : RM.Lock(), 'E3' : RM.Lock(), 'F3' : RM.Lock(), 'G3' : RM.Lock(), 'A3' : RM.Lock(), 'B3' : RM.Lock(),
+            'C2' : RM.Lock(), 'D2' : RM.Lock(), 'E2' : RM.Lock(),  'F2' : RM.Lock(), 'G2' : RM.Lock(), 'A2' : RM.Lock(), 'B2' : RM.Lock(),
+            'C1' : RM.Lock(), 'D1' : RM.Lock(), 'E1' : RM.Lock(), 'F1' : RM.Lock(), 'G1' : RM.Lock(), 'A1' : RM.Lock(), 'B1' : RM.Lock(),
         } #Keyboard Locks
 
-        with Exec.ProcessPoolExecutor() as Executor: #multi process context manager
-            for Part in File: #for loop for every MIDI
-                pass
+        Parts = [Process(target = PlayPart, args = (Part, KeyLocks)) for Part in File]
 
-    def PlayPart(self, Part = [], Locks): # funtion to play MIDI track (multi process)
-        for Element in Part: # loop for eery element
-            Fraction = Duration / 10 # 10% of the duration
-            Sleep(Rand(40, 200) / (10**7)) #human randomness simulation
+        for Part in Parts:
+            Part.start()
 
-            if Element['Type'] == 'Note': #check if element type is note
-                Key = Element['Sound'] + Element['Octave'] #full note
-                Duration = Element['Duration'] #copy the duration of the note
+        for Part in Parts:
+            Part.join()
 
-                if Locks[Key].locked(): #check if the key binded to the note is locked
-                Fraction = Duraion / 100 # 1% of the duration
-
-                    while Duration > 0: # while the note can still be played
-                        if Locks[Key].locked(): #check if the key binded to the note is locked
-                            Sleep(Fraction) #wait a fraction of the duration
-                            Duration -= Fraction #subtract the fraction  from the duration and update the duration
-                        else: #if the key binded to the note is free
-                            Locks[Key].acquire() #lock the resource for other processes
-                            PressKey(DXCodes[Key]) #key press of the note
-                            Sleep(Duration + (Rand(-250, 250) / (10**7))) #wait the duration of the note + human randomness
-                            ReleaseKey(DXCodes[Key]) #key release of the note
-                            Locks[Key].release() #release the resourse for other process
-                            Duration = 0
-
-                else: #if the key binded to the note is free
-                    Locks[Key].acquire() #lock the resource for other processes
-                    PressKey(DXCodes[Key]) #key press of the note
-                    Sleep(Element['Duration'] + (Rand(-250, 250) / (10**7))) #wait the duration of the note + human randomness
-                    ReleaseKey(DXCodes[Key]) #key release of the note
-                    Locks[Key].release() #release the resourse for other process
-
-            if Element['Type'] == 'Chord': # check if the element is a chord
-                Duration = Element['Duration'] #copy the duration of the note
-                Keys = [Notes[Note + Octave] for Note in zip(Element['Sound'], Element['Octave'])] #list with full notes
-                Locked = [] #list of externally locked resources
-                Unlocked = [] #list of internally locked resources
-
-                for Key in Keys: #for loop for every key binded to the chord
-                    if Locks[Key].locked(): #check if the key is locked
-                        Locked.append(Key) #append the locked key to locked resources
-                    else: #the resource is not locked
-                        Locked[Key].acquire() #the resourse is locked by this section
-                        Unlocked.append(Key) #the free key binded to the note of the chord is appended to the list of internally locked resources
-
-                if len(Unlocked) < len(Keys): #check if all required resources are available
-                    Fraction = Duration / 100 # 1% of the duration
-
-                    while Duration > 0: #while the note can still be played
-                        if len(Locked) > 0: #check if there is some unavailable resources
-                            for Key in Locked[:]: #for loop for every locked resource
-                                if not Locked[Key].locked(): #check (again) if the resource is (still) locked
-                                    Locked[Key].acquire() #locked the resource
-                                    Unlocked.insert(Keys.index(Key), Locked.pop(Locked.index(Key))) #remove the item from locked resource and insert it in internally locked resources
-
-                            Sleep(Fraction) #wait the fraction of playable time
-                            Duration -= Fraction #remove the fraction from total duration
-
-                        if len(Locked) == 0 or Duration == Fraction: #check if the chord is still playable
-                            if Duration == Fraction and not len(Locked) == 0: #check if chord can still be played and all needed resources are available
-                                Sleep(Duration + (Rand(-250, 250) / (10**7))) #wait the duration of the note + human randomness
-                                Duration = 0 #set the duration to 0 to exit the loop
-
-                            if len(Locked) == 0: #check if all needed resources are available
-                                for Key in Keys: #for loop for every note of the chord
-                                    PressKey(DXCodes[Key]) #key press of the note
-                                    Sleep(Rand(0, 250) / (10**7)) #wait the time of human interaction
-
-                                Sleep(Duration + (Rand(-250, 250) / (10**7))) #wait the duration of the note + human randomness
-
-                                for Key in Unlocked:
-                                    ReleaseKey(DXCodes[Key]) #key release of the note
-                                    Locks[Key].release() #release the resourse for other process
-                                    Sleep(Rand(0, 250) / (10**7)) #wait the time of human interaction
-
-                                Duration = 0#set the duration to 0 to exit the loop
-
-                if len(Unlocked) == len(Keys): #if all the resource are available (first try)
-                    for Key in Unlocked: #for loop for every note of the chord (pressing)
-                        PressKey(DXCodes[Key]) #key press of the note
-                        Sleep(Rand(0, 250) / (10**7)) #wait the time of human interaction
-
-                    Sleep(Duration + (Rand(-250, 250) / (10**7))) #wait the duration of the note + human randomness
-
-                    for Key in Unlocked: #for loop for every note of the chord (releasing)
-                        ReleaseKey(DXCodes[Key]) #key release of the note
-                        Locks[Key].release() #release the resourse for other process
-                        Sleep(Rand(0, 250) / (10**7)) #wait the time of human interaction
-
-                ################################################TODO
-
-    def Pause(self):
-        pass
+def Pause(self):
+    pass
 
 class GenshinLyrePlayer(App): #class for main app
     Screen =\
@@ -239,7 +206,7 @@ class GenshinLyrePlayer(App): #class for main app
         super().__init__() #constructor of super class
         self.iconphoto(True, Photo(file = 'Res/Logo.png')) #setting icon of the app
 
-        if not IsAdmin(): #checking if the user has admin rights
+        if IsAdmin(): #checking if the user has admin rights
             HEIGHT = int(self.winfo_screenheight() * 0.3) #getting the height of screen and dividing by 3 and setting it as height of the window
             WIDTH = int(HEIGHT * 1.2) #setting the height * 1.2 as width of the window
             Sizes = str(WIDTH) + 'x' + str(HEIGHT) #converting the sizes in a string

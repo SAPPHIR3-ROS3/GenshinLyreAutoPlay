@@ -42,6 +42,21 @@ def ParseMIDI(FilePath = str()): #this function parse midi creating a list
 
     return [Stream[Start : End] for Start, End in zip(Parts[: -1], Parts[1 :])] #splitting stream in parts(instruments)
 
+def GetBPM(UnclassifiedStream = []):
+    BPM = [-1 for i in range(len(UnclassifiedStream))]
+
+    for Part in UnclassifiedStream:
+        Index = UnclassifiedStream.index(Part)
+        for Element in Part:
+            if isinstance(Element, Metronome):
+                BPM[Index] = Element.number
+                break
+
+    if -1 in BPM:
+        BPM = [I if not I == -1 else BPM[0] for I in BPM]
+
+    return BPM
+
 def GetOctaveRange(UnclassifiedStreamPart = []): #this function get minimum and the maximum octave in a parts in a unclassified stream part
     Min = 8 #minimun octave
     Max = 0 #maximum octave
@@ -79,8 +94,10 @@ def GetOctaves(ClassifiedStreamPart = []): #this function get the minimum and ma
                     Min = Item #changing the min octave
     return [Min , Max]
 
-def ClassifyElements(UnclassifiedStreamPart = []): #this function classify the elements inside the list
+def ClassifyElements(UnclassifiedStreamPart = [], BPM = float()): #this function classify the elements inside the list
     ClassifiedStream = [] #list with classified elements with common property
+    Start = [type(i) == type(Metronome()) for i in UnclassifiedStreamPart[:15]]
+    HasBPM = (False, True)[True in Start]
 
     for Element in UnclassifiedStreamPart: #for loop for every element in the part
         Item = dict()
@@ -89,19 +106,28 @@ def ClassifyElements(UnclassifiedStreamPart = []): #this function classify the e
             Item['Type'] = 'Note'
             Item['Sound'] = Element.name
             Item['Octave'] = Element.octave
-            Item['Duration'] = Element.seconds
+            if HasBPM:
+                Item['Duration'] = Element.seconds
+            else:
+                Item['Duration'] = BPM * Element.quarterLength
             Item['Extra'] = 'None'
         elif isinstance(Element, Chord):
             Item['Type'] = 'Chord'
             Item['Sound'] = [Part.name for Part in Element.notes]
             Item['Octave'] = [Part.octave for Part in Element.notes]
-            Item['Duration'] = Element.seconds
+            if HasBPM:
+                Item['Duration'] = Element.seconds
+            else:
+                Item['Duration'] = BPM * Element.quarterLength
             Item['Extra'] = 'None'
         elif isinstance(Element, Rest):
             Item['Type'] = 'Rest'
             Item['Sound'] = 'None'
             Item['Octave'] = 'None'
-            Item['Duration'] = Element.seconds
+            if HasBPM:
+                Item['Duration'] = Element.seconds
+            else:
+                Item['Duration'] = BPM * Element.quarterLength
             Item['Extra'] = 'None'
         elif isinstance(Element, Instrument):
             Item['Type'] = 'Instrument'
@@ -125,7 +151,7 @@ def ClassifyElements(UnclassifiedStreamPart = []): #this function classify the e
             Item['Type'] = 'BPM'
             Item['Sound'] = 'None'
             Item['Octave'] = 'None'
-            Item['Duration'] = 'Note'
+            Item['Duration'] = 'None'
             Item['Extra'] = Element.number
         elif isinstance(Element, Part):
             Item['Type'] = 'Part'
@@ -136,6 +162,15 @@ def ClassifyElements(UnclassifiedStreamPart = []): #this function classify the e
 
         if not isinstance(Element, Voice): #chek if not voice type (not actually playable)
             ClassifiedStream.append(Item) #adding element dictionary
+
+    if not HasBPM:
+        Item = dict()
+        Item['Type'] = 'BPM'
+        Item['Sound'] = 'None'
+        Item['Octave'] = 'None'
+        Item['Duration'] = 'None'
+        Item['Extra'] = BPM
+        ClassifiedStream.insert(3, Item)
 
     return ClassifiedStream
 
@@ -233,9 +268,10 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
 
 def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
     Stream = ParseMIDI('Songs/' + FileName)
+    BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
-    ComputedStream = [ClassifyElements(SubStream) for SubStream in Stream]
-    Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
+    ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in (Stream)]
+    Octaves = [GetOctaves(SubStream) for SubStream, SubBPM in zip(ComputedStream, BPMs)]
     MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
     CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
     CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
@@ -243,13 +279,15 @@ def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
     CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox)
 
 if __name__ == '__main__':
-    Stream = ParseMIDI('Songs/Necrofantasia 6.mid')
+    Name = 'Necrofantasia 6'
+    Stream = ParseMIDI('Songs/'+ Name + '.mid')
+    BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
-    ComputedStream = [ClassifyElements(SubStream) for SubStream in Stream]
+    ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
     Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
     MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
     CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
     CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
     ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
 
-    CompileSong(ShiftedStream, 'Necrofantasia 6', True)
+    CompileSong(ShiftedStream, Name, True)

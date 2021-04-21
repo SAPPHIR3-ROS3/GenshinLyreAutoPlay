@@ -236,35 +236,43 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
     if ClosestApprox and UpperApprox: #closest approximation is preferred if both are active
         UpperApprox = False #turning off upper semiton approximation
 
-    FileName = 'MappedSongs/' + FileName + '.cmid'
+    if not ClosestApprox and not UpperApprox: #ensuring there is an approximation method
+        ClosestApprox = True #default approximation method
+
+    FileName = 'MappedSongs/' + FileName + '.cmid' #completed file name + path
     UpperSemitone =\
     {
         'C-': 'C', 'C': 'C', 'C#': 'D', 'D-': 'D', 'D': 'D', 'D#': 'E', 'E-': 'E',
         'E': 'E', 'E#': 'F', 'F-': 'F', 'F' : 'F', 'F#': 'G', 'G-': 'G', 'G': 'G',
         'G#': 'A', 'A-': 'A', 'A': 'A', 'A#': 'B', 'B-': 'B', 'B': 'B', 'B#': 'C',
-    }
+    } #upper approximation map
+    ClosestSemitone =\
+    {
+        'C-': 'C', 'C': 'C', 'C#': 'C', 'D-': 'D', 'D': 'D', 'D#': 'D', 'E-': 'E',
+        'E': 'E', 'E#': 'E', 'F-': 'F', 'F' : 'F', 'F#': 'F', 'G-': 'G', 'G': 'G',
+        'G#': 'G', 'A-': 'A', 'A': 'A', 'A#': 'A', 'B-': 'B', 'B': 'B', 'B#': 'B',
+    } #clostest approximation map
 
-    for Part in ClassifiedStream:
-        for Element in Part[:]:
-            if Element['Type'] == 'Part':
+    for Part in ClassifiedStream: #for loop for every part
+        for Element in Part[:]: #for loop for every element
+            if Element['Type'] == 'Part': #checking if the element is a stream part
                 Part.remove(Element)
-            elif Element['Type'] == 'Key':
-                Element['Extra'] = str(Element['Extra'].tonic.name + ' ' + Element['Extra'].mode)
+            elif Element['Type'] == 'Key': #checking if the element is key
+                Element['Extra'] = str(Element['Extra'].tonic.name + ' ' + Element['Extra'].mode) #turning key to string
             elif Element['Type'] == 'Note': #checking if the element is a note
-                if ClosestApprox: #checking if closest approximation is active
-                    Element['Sound'] = Element['Sound'].replace('#', '').replace('-', '') #removing alteration
-                elif UpperApprox: #checking if upper semitone  approximation is active
-                    Element['Sound'] = UpperSemitone[Element['Sound']] #approximating to the next semitone
-            elif Element['Type'] == 'Chord': # check if the element is a chord
-                for Item in Element['Sound']:
-                    if ClosestApprox: #checking if closest approximation is active
-                        Item = Item.replace('#', '').replace('-', '') #removing alteration
-                    elif UpperApprox: #checking if upper semitone approximation is active
-                        Item = UpperSemitone[Item] #approximating to the next semitone
+                if ClosestApprox: #checking the approximation method
+                    Element['Sound'] = ClosestSemitone[Element['Sound']] #remapping the sound
+                elif UpperApprox: #checking the approximation method
+                    Element['Sound'] = UpperSemitone[Element['Sound']] #remapping the sound
+            elif Element['Type'] == 'Chord': #checkinf the element is a chord
+                if ClosestApprox: #checking the approximation method
+                    Element['Sound'] = [ClosestSemitone[Note] for Note in Element['Sound']] #remapping the sound
+                elif UpperApprox: #checking the approximation method
+                    Element['Sound'] = [UpperSemitone[Note] for Note in Element['Sound']] #remapping the sound
 
-    with open(FileName, 'wb') as OutputFile:
-        Data = Dumps(ClassifiedStream,protocol = HighestProtocol)
-        OutputFile.write(Data)
+    with open(FileName, 'wb') as OutputFile: #creating a compiled file
+        Data = Dumps(ClassifiedStream, protocol = HighestProtocol) #serializing data
+        OutputFile.write(Data) #writing data to the file
 
 def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
     Stream = ParseMIDI('Songs/' + FileName)
@@ -279,7 +287,7 @@ def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
     CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox)
 
 if __name__ == '__main__':
-    Name = 'Necrofantasia 6'
+    Name = 'Bad Apple!'
     Stream = ParseMIDI('Songs/'+ Name + '.mid')
     BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]

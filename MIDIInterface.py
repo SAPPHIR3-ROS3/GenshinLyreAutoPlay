@@ -239,7 +239,7 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
     if not ClosestApprox and not UpperApprox: #ensuring there is an approximation method
         ClosestApprox = True #default approximation method
 
-    FileName = 'MappedSongs/' + FileName + '.cmid' #completed file name + path
+    print(FileName, len(ClassifiedStream), 'track(s)')
     UpperSemitone =\
     {
         'C-': 'C', 'C': 'C', 'C#': 'D', 'D-': 'D', 'D': 'D', 'D#': 'E', 'E-': 'E',
@@ -274,15 +274,16 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
         Tracks = [i for i in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] #name for subtracks
         if len(Tracks) > len(ClassifiedStream): #check what element has more tracks
             for i in range(len(ClassifiedStream)): #for loop for every track in the MIDI file
-                FilePart = FileName + ' - ' + Tracks[i] #new name of the file
+                FilePart = 'MappedSongs/' + FileName + '[' + Tracks[i] + ']' + '.cmid' #new name of the file
                 Part = [ClassifiedStream[i]] #list of single part of MIDI file
+                print(FilePart)
 
-                with open(FilePArt, 'wb') as OutputFile: #creating a compiled file
+                with open(FilePart, 'wb') as OutputFile: #creating a compiled file
                     Data = Dumps(Part, protocol = HighestProtocol) #serializing data
                     OutputFile.write(Data) #writing data to the file
         else:
             for i in range(len(Tracks)): #for loop for every track in the MIDI file (will cut all the tracks next to 26)
-                FilePart = FileName + ' - ' Tracks[i] #new name of the file
+                FilePart ='MappedSongs/' +  FileName + '[' + Tracks[i] + ']' + '.cmid' #new name of the file
                 Part = [ClassifiedStream[i]] #list of single part of MIDI file
 
                 with open(FilePArt, 'wb') as OutputFile: #creating a compiled file
@@ -290,21 +291,22 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
                     OutputFile.write(Data) #writing data to the file
 
     else:
+        FileName = 'MappedSongs/' + FileName + '.cmid' #completed file name + path
         with open(FileName, 'wb') as OutputFile: #creating a compiled file
             Data = Dumps(ClassifiedStream, protocol = HighestProtocol) #serializing data
             OutputFile.write(Data) #writing data to the file
 
-def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
+def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False, Split = False):
     Stream = ParseMIDI('Songs/' + FileName)
     BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
-    ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in (Stream)]
+    ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
     Octaves = [GetOctaves(SubStream) for SubStream, SubBPM in zip(ComputedStream, BPMs)]
     MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
     CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
     CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
     ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
-    CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox)
+    CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox, Split)
 
 if __name__ == '__main__':
     Name = 'Super Mario Bros Main Theme'
@@ -318,4 +320,4 @@ if __name__ == '__main__':
     CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
     ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
 
-    CompileSong(ShiftedStream, Name, True)
+    CompileSong(ShiftedStream, Name, True, False, True)

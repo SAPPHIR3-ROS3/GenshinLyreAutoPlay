@@ -232,7 +232,7 @@ def ShiftOctave(ClassifiedStreamPart = [], OctaveRange = []): #this function shi
 
     return ClassifiedStreamPart
 
-def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, UpperApprox = False):
+def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, UpperApprox = False, Split = False):
     if ClosestApprox and UpperApprox: #closest approximation is preferred if both are active
         UpperApprox = False #turning off upper semiton approximation
 
@@ -270,9 +270,29 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
                 elif UpperApprox: #checking the approximation method
                     Element['Sound'] = [UpperSemitone[Note] for Note in Element['Sound']] #remapping the sound
 
-    with open(FileName, 'wb') as OutputFile: #creating a compiled file
-        Data = Dumps(ClassifiedStream, protocol = HighestProtocol) #serializing data
-        OutputFile.write(Data) #writing data to the file
+    if Split:
+        Tracks = [i for i in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] #name for subtracks
+        if len(Tracks) > len(ClassifiedStream) #check what element has more tracks
+            for i in range(len(ClassifiedStream)): #for loop for every track in the MIDI file
+                FilePart = FileName + ' - ' + Tracks[i] #new name of the file
+                Part = [ClassifiedStream[i]] #list of single part of MIDI file
+
+                with open(FilePArt, 'wb') as OutputFile: #creating a compiled file
+                    Data = Dumps(Part, protocol = HighestProtocol) #serializing data
+                    OutputFile.write(Data) #writing data to the file
+        else:
+            for i in range(len(Tracks)): #for loop for every track in the MIDI file (will cut all the tracks next to 26)
+                FilePart = FileName + ' - ' Tracks[i] #new name of the file
+                Part = [ClassifiedStream[i]] #list of single part of MIDI file
+
+                with open(FilePArt, 'wb') as OutputFile: #creating a compiled file
+                    Data = Dumps(Part, protocol = HighestProtocol) #serializing data
+                    OutputFile.write(Data) #writing data to the file
+
+    else:
+        with open(FileName, 'wb') as OutputFile: #creating a compiled file
+            Data = Dumps(ClassifiedStream, protocol = HighestProtocol) #serializing data
+            OutputFile.write(Data) #writing data to the file
 
 def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
     Stream = ParseMIDI('Songs/' + FileName)
@@ -287,7 +307,7 @@ def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False):
     CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox)
 
 if __name__ == '__main__':
-    Name = 'Bad Apple!'
+    Name = 'Super Mario Bros Main Theme'
     Stream = ParseMIDI('Songs/'+ Name + '.mid')
     BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]

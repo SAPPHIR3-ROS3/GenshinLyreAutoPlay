@@ -239,7 +239,6 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
     if not ClosestApprox and not UpperApprox: #ensuring there is an approximation method
         ClosestApprox = True #default approximation method
 
-    print(FileName, len(ClassifiedStream), 'track(s)')
     UpperSemitone =\
     {
         'C-': 'C', 'C': 'C', 'C#': 'D', 'D-': 'D', 'D': 'D', 'D#': 'E', 'E-': 'E',

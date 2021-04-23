@@ -269,13 +269,12 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
                 elif UpperApprox: #checking the approximation method
                     Element['Sound'] = [UpperSemitone[Note] for Note in Element['Sound']] #remapping the sound
 
-    if Split:
+    if Split: #check if the user wants to split tracks
         Tracks = [i for i in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] #name for subtracks
         if len(Tracks) > len(ClassifiedStream): #check what element has more tracks
             for i in range(len(ClassifiedStream)): #for loop for every track in the MIDI file
                 FilePart = 'MappedSongs/' + FileName + '[' + Tracks[i] + ']' + '.cmid' #new name of the file
                 Part = [ClassifiedStream[i]] #list of single part of MIDI file
-                print(FilePart)
 
                 with open(FilePart, 'wb') as OutputFile: #creating a compiled file
                     Data = Dumps(Part, protocol = HighestProtocol) #serializing data

@@ -272,7 +272,7 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
 
     if Split:
         Tracks = [i for i in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] #name for subtracks
-        if len(Tracks) > len(ClassifiedStream) #check what element has more tracks
+        if len(Tracks) > len(ClassifiedStream): #check what element has more tracks
             for i in range(len(ClassifiedStream)): #for loop for every track in the MIDI file
                 FilePart = FileName + ' - ' + Tracks[i] #new name of the file
                 Part = [ClassifiedStream[i]] #list of single part of MIDI file

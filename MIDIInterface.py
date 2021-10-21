@@ -225,6 +225,7 @@ def ShiftOctave(ClassifiedStreamPart = [], OctaveRange = []): #this function shi
     Shift = min(OctaveRange) - 1 #finding the minimum octave and decreasing it by 1
 
     for Element in ClassifiedStreamPart: #for loop to shift every note in the part
+        print(Element)
         if Element['Type'] == 'Note': #checking if the element is a note
             Element['Octave'] -= Shift #lowering the octave of the note
         elif Element['Type'] == 'Chord': # check if the element is a chord
@@ -307,7 +308,7 @@ def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False, Split =
     CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox, Split)
 
 if __name__ == '__main__':
-    Name = 'Super Mario Bros Main Theme'
+    Name = ''
     Stream = ParseMIDI('Songs/'+ Name + '.mid')
     BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]

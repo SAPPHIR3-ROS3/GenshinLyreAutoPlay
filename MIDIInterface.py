@@ -12,6 +12,7 @@ from music21.stream import Part
 from music21.stream import Voice
 from pickle import dumps as Dumps
 from pickle import HIGHEST_PROTOCOL as HighestProtocol
+from sys import argv as Args
 
 def ParseMIDI(FilePath = str()): #this function parse midi creating a list
     Majors =\
@@ -42,22 +43,22 @@ def ParseMIDI(FilePath = str()): #this function parse midi creating a list
 
     return [Stream[Start : End] for Start, End in zip(Parts[: -1], Parts[1 :])] #splitting stream in parts(instruments)
 
-def GetBPM(UnclassifiedStream = []):
-    BPM = [-1 for i in range(len(UnclassifiedStream))]
+def GetBPM(UnclassifiedStream = []): #this function extract the BPM of the song
+    BPM = [-1 for i in range(len(UnclassifiedStream))] #BPM for every part of the stream
 
-    for Part in UnclassifiedStream:
-        Index = UnclassifiedStream.index(Part)
-        for Element in Part:
-            if isinstance(Element, Metronome):
-                BPM[Index] = Element.number
-                break
+    for Part in UnclassifiedStream: #for loop for every part of the song
+        Index = UnclassifiedStream.index(Part) #get the index of the index of the part of the stream
+        for Element in Part: #for loop for every element of the part
+            if isinstance(Element, Metronome): #check if the element is a BPM type
+                BPM[Index] = Element.number #get the BPM
+                break #breaks after finding the BPM (it's useless to continue after)
 
-    if -1 in BPM:
-        BPM = [I if not I == -1 else BPM[0] for I in BPM]
+    if -1 in BPM: #check if there is some BPM unassigned
+        BPM = [I if not I == -1 else BPM[0] for I in BPM] #assign missing BPM as the BPM of the first part
 
     return BPM
 
-def GetOctaveRange(UnclassifiedStreamPart = []): #this function get minimum and the maximum octave in a parts in a unclassified stream part
+def GetOctaveRange(UnclassifiedStreamPart = None): #this function get minimum and the maximum octave in a parts in a unclassified stream part
     Min = 8 #minimun octave
     Max = 0 #maximum octave
 
@@ -76,7 +77,7 @@ def GetOctaveRange(UnclassifiedStreamPart = []): #this function get minimum and 
 
     return [Min, Max]
 
-def GetOctaves(ClassifiedStreamPart = []): #this function get the minimum and maximum octave in a classified in a classified stream part
+def GetOctaves(ClassifiedStreamPart = None): #this function get the minimum and maximum octave in a classified in a classified stream part
     Min = 8 #minimun octave
     Max = 0 #maximum octave
 
@@ -94,7 +95,7 @@ def GetOctaves(ClassifiedStreamPart = []): #this function get the minimum and ma
                     Min = Item #changing the min octave
     return [Min , Max]
 
-def ClassifyElements(UnclassifiedStreamPart = [], BPM = float()): #this function classify the elements inside the list
+def ClassifyElements(UnclassifiedStreamPart = None, BPM = float()): #this function classify the elements inside the list
     ClassifiedStream = [] #list with classified elements with common property
     Start = [type(i) == type(Metronome()) for i in UnclassifiedStreamPart[:15]]
     HasBPM = (False, True)[True in Start]
@@ -233,7 +234,7 @@ def ShiftOctave(ClassifiedStreamPart = [], OctaveRange = []): #this function shi
 
     return ClassifiedStreamPart
 
-def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, UpperApprox = False, Split = False):
+def CompileSong(ClassifiedStream = None, FileName = str(), ClosestApprox = True, UpperApprox = False, Split = False):
     if ClosestApprox and UpperApprox: #closest approximation is preferred if both are active
         UpperApprox = False #turning off upper semiton approximation
 
@@ -274,7 +275,7 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
         Tracks = [i for i in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] #name for subtracks
         if len(Tracks) > len(ClassifiedStream): #check what element has more tracks
             for i in range(len(ClassifiedStream)): #for loop for every track in the MIDI file
-                FilePart = 'MappedSongs/' + FileName + '[' + Tracks[i] + ']' + '.cmid' #new name of the file
+                FilePart = f'MappedSongs/{FileName}[{Tracks[i]}].cmid' #new name of the file
                 Part = [ClassifiedStream[i]] #list of single part of MIDI file
 
                 with open(FilePart, 'wb') as OutputFile: #creating a compiled file
@@ -282,7 +283,7 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
                     OutputFile.write(Data) #writing data to the file
         else:
             for i in range(len(Tracks)): #for loop for every track in the MIDI file (will cut all the tracks next to 26)
-                FilePart ='MappedSongs/' +  FileName + '[' + Tracks[i] + ']' + '.cmid' #new name of the file
+                FilePart = f'MappedSongs/{FileName}[{Tracks[i]}].cmid' #new name of the file
                 Part = [ClassifiedStream[i]] #list of single part of MIDI file
 
                 with open(FilePArt, 'wb') as OutputFile: #creating a compiled file
@@ -290,13 +291,13 @@ def CompileSong(ClassifiedStream = [], FileName = str(), ClosestApprox = True, U
                     OutputFile.write(Data) #writing data to the file
 
     else:
-        FileName = 'MappedSongs/' + FileName + '.cmid' #completed file name + path
+        FileName = f'MappedSongs/{FileName}.cmid' #completed file name + path
         with open(FileName, 'wb') as OutputFile: #creating a compiled file
             Data = Dumps(ClassifiedStream, protocol = HighestProtocol) #serializing data
             OutputFile.write(Data) #writing data to the file
 
 def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False, Split = False):
-    Stream = ParseMIDI('Songs/' + FileName)
+    Stream = ParseMIDI(f'Songs/{FileName}')
     BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
     ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
@@ -308,15 +309,35 @@ def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False, Split =
     CompileSong(ShiftedStream, FileName.replace('.mid', ''), ClosestApprox, UpperApprox, Split)
 
 if __name__ == '__main__':
-    Name = ''
-    Stream = ParseMIDI('Songs/'+ Name + '.mid')
-    BPMs = GetBPM(Stream)
-    OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
-    ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
-    Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
-    MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
-    CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
-    CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
-    ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
+    if '-h' in Args or '--help' in Args:
+        print('after "python MIDIInterface.py" specify the absolute path or relative path of MIDI files (possibily between "") to compile')
+        quit()
+        
+    if len(Args) == 1:
+        Name = ''
+        Stream = ParseMIDI(f'Songs/{Name}.mid')
+        BPMs = GetBPM(Stream)
+        OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
+        ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
+        Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
+        MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
+        CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
+        CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
+        ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
 
-    CompileSong(ShiftedStream, Name, True, False, True)
+        CompileSong(ShiftedStream, Name, True, False, True)
+
+    else:
+        Args = Args[1 :]
+        for Arg in Args:
+            Stream = ParseMIDI(Arg)
+            BPMs = GetBPM(Stream)
+            OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
+            ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
+            Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
+            MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
+            CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
+            CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
+            ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
+
+            CompileSong(ShiftedStream, Name, True, False, True)

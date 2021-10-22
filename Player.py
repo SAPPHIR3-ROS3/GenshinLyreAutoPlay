@@ -1,26 +1,38 @@
 from concurrent import futures as Exec
+from ctypes import c_bool as CBool
 from ctypes import windll as WinDLL
 from DirectXInput import PressKey
 from DirectXInput import ReleaseKey
+from keyboard import is_pressed as IsPressed
 from MIDIInterface import Compile
 from multiprocessing import Lock
 from multiprocessing import Manager
 from multiprocessing import Pool
 from multiprocessing import Process
+from multiprocessing import Value
+from os import getpid as GetPID
+from os import kill as Kill
 from os import listdir as DirList
 from pickle import load as Load
 from random import randint as Rand
-from tkinter.ttk import Button as Button
+from sys import exit as Exit
 from tkinter import Canvas as Canvas
 from tkinter import Frame as TkPage
+from tkinter import IntVar as IntVar
 from tkinter import Label as Label
 from tkinter import Listbox as ListBox
 from tkinter import PhotoImage as Photo
 from tkinter import StringVar as StringVar
 from tkinter import Tk as App
-from time import sleep as Sleep
+from tkinter.ttk import Button as Button
+from tkinter.ttk import Checkbutton as Check
 from tkinter.ttk import Frame as Page
+from tkinter.ttk import Radiobutton as Radio
 from tkinter.ttk import Scrollbar as SBar
+from time import sleep as Sleep
+from threading import active_count as ThreadCount
+from threading import get_ident as Identity
+from threading import Thread
 from urllib.request import urlopen as URL
 
 Notes=\
@@ -41,79 +53,7 @@ def IsAdmin(): #this function check if the script as Admin Priviledges
     try:
         return WinDLL.shell32.IsUserAnAdmin() #attempt to use shell as Admin (rights verification)
     except:
-        return False # if the user is not admin an exception will be thrown and catched
-
-def PlayPart(Part = [], Locks = dict()): # funtion to play MIDI track (multiprocessing)
-    for Element in Part:
-        if Element['Type'] == 'Note': #check if the element is a note
-            Note = Element['Sound'] + str(Element['Octave']) #full note
-            Key = DXCodes[Notes[Note]] #key to press binded to the note
-            Duration = Element['Duration'] #element duration in seconds
-            Fraction = Duration / 10 #fraction of duration (loop porpuses)
-
-            if Locks[Note].locked(): #check id the resource is not locked by other processes
-                while Locks[Note].locked() and Duration > Fraction: #while the note can not be played and can still be played
-                    Sleep(Fraction) #sleep a fraction of the duration to check later in time id the resource is free
-                    Duration -= Fraction #remove the fraction from the total duration
-
-                if not Locks[Note].locked() and Duration > Fraction: #check the resource is available and has still sense play it
-                    Locks[Note].acquire() #lock the resource for other processes
-                    PressKey(Key) #press the key binded to the element
-                    Sleep(Duration) #wait the (partial) duration of the element
-                    Duration = 0 #the note is played and the duration is not needed anymore
-                    ReleaseKey(Key) #release the key binded to the element
-                    Locks[Note].release() #unlock the resource for other processes
-
-                else: #check if it has no more sense to be played
-                    Sleep(Duration) #sleep the remaining duration of the element
-            else: #the resource is available right away
-                Locks[Note].acquire() #lock the resource for other processes
-                PressKey(Key) #press the key binded to the element
-                Sleep(Duration) #wait the duration of the element
-                ReleaseKey(Key) #release the key binded to the element
-                Locks[Note].release() #unlock the resource for other processes
-
-        if Element['Type'] == 'Chord': #check if the element is a chord
-            Chord = [Note + str(Octave) for Note, Octave in zip(Element['Sound'], Element['Octave'])] #full chord
-            Keys = [DXCodes[Notes[Note]] for Note in Chord] #keys to press binded to the chord
-            Duration = Element['Duration'] #element duration in seconds
-            Fraction = Duration / 10 #fraction of duration (loop porpuses)
-
-            if all([Locks[Note].locked() for Note in Chord]): #check if all the resources not locked by other processes
-                while not all(list([Locks[Note].locked() for Note in Chord])) and Duration > Fraction: #while the note can not be played and can still be played
-                    Sleep(Fraction) #sleep a fraction of the duration to check later in time id the resource is free
-                    Duration -= Fraction #remove the fraction from the total duration
-
-                if all([not Locks[Note].locked() for Note in Chord]) and Duration > Fraction: #while the note can not be played and can still be played
-                    for Note in Chord: #for loop for every note of the chord
-                        Locks[Note].aquire() #lock the resource for other processes
-                    for Key in Keys: #for loop for every key that need to be pressed
-                        PressKey(Key) #press the key binded to the element
-
-                    Sleep(Duration) #wait the (partial) duration of the element
-
-                    for Key, Note in zip(Keys, Chord):
-                        ReleaseKey(Key) #release the key binded to the element
-                        Locked[Note].release() #unlock the resource for other processes
-
-                else: #check if it has no more sense to be played
-                    Sleep(Duration) #sleep the remaining duration of the element
-            else: #the resources are available right away
-                for Note in Chord: #for loop for evry note of the chord
-                    Locks[Note].aquire() #lock the resource for other processes
-
-                for Key in Keys:
-                    PressKey(Element) #press the key binded to the element
-
-                Sleep(Duration) #wait the duration of the element
-
-                for Element in Unlocked:
-                    ReleaseKey(Element) #release the key binded to the element
-                    Locked[Element].release() #unlock the resource for other processes
-
-        if Element['Type'] == 'Rest': #check if the element is a rest
-            Duration = Element['Duration'] #element duration in seconds
-            Sleep(Duration) #wait the (partial) duration of the element
+        return False #if the user is not admin an exception will be thrown and catched
 
 class Home(TkPage):
     Name = 'Home' #name of the class (attributes)
@@ -124,6 +64,8 @@ class Home(TkPage):
 
         self.Songs = [Song.replace('.mid', '') for Song in DirList('Songs') if Song.endswith('.mid')] #mappable songs
         self.MappedSongs = [Song for Song in DirList('MappedSongs') if Song.endswith('.cmid')] #mapped and compiled song
+        self.Pause = False #pause state
+        self.Stop = True #playing state
 
         TopLabel = Label(self, text = 'Genshin Lyre Player', font= Home.Font(24), bd = 10) #top label with a title for the page
         TopLabel.place(anchor= 'n', relx= 0.5, rely = 0.015, relwidth = 1, relheight=0.15) #placing the label
@@ -131,17 +73,25 @@ class Home(TkPage):
         self.ItemList = ListBox(self) #item list of the song
         for Item in self.MappedSongs: #for loop for every compiled comiled song
             self.ItemList.insert(self.MappedSongs.index(Item), Item) #indexing the song in the list
-        self.ItemList.place(anchor= 'n', relx= 0.5, rely = 0.2, relwidth = 1, relheight=0.5) #placing the item list
+        self.ItemList.place(anchor= 'n', relx= 0.5, rely = 0.2, relwidth = 1, relheight = 0.4) #placing the item list
 
         RefreshLogo = Photo(file = 'Res/Refresh.png') #logo of refresh button (not showing at the moment)
         Refresh = Button\
         (
             self,
-            image = RefreshLogo,
+            text = 'Refresh',
             command = lambda : self.Refresh()
         ) #button to refresh the song list
-        Refresh.image = RefreshLogo########
-        Refresh.place(anchor= 'nw', relx= 0.01, rely = 0.71, relwidth = 0.1, relheight = 0.12) #placing the button
+        Refresh.image = RefreshLogo ########
+        Refresh.place(anchor= 'nw', relx = 0.01, rely = 0.7, relwidth = 0.18, relheight = 0.2) #placing the button
+
+        Stop = Button\
+        (
+            self,
+            text = 'Stop',
+            command = lambda : self.Stop()
+        )
+        Stop.place(anchor= 'nw', relx= 0.21, rely = 0.7, relwidth = 0.18, relheight = 0.2)
 
         PlayLogo = Photo(file = 'Res/Play.png') #logo of play button (not showing at the moment)
         Play = Button\
@@ -151,16 +101,24 @@ class Home(TkPage):
             command = lambda : self.Play()
         )#button to play the song selected
         Play.image = PlayLogo ##########
-        Play.place(anchor= 'nw', relx= 0.295, rely = 0.71, relwidth = 0.2, relheight = 0.22) #placing the button
+        Play.place(anchor= 'nw', relx= 0.41, rely = 0.7, relwidth = 0.18, relheight = 0.2) #placing the button
 
         PauseLogo = Photo(file = '') #logo of the pause button
         Pause = Button\
         (
             self,
             text = 'Pause',
-            command = lambda : self.Pause()
+            command = lambda : self.PauseSong()
         ) #button to pause a song
-        Pause.place(anchor= 'nw', relx= 0.505, rely = 0.71, relwidth = 0.2, relheight = 0.22) #placing the button
+        Pause.place(anchor= 'nw', relx= 0.61, rely = 0.7, relwidth = 0.18, relheight = 0.2) #placing the button
+
+        Compile = Button\
+        (
+            self,
+            text = 'Compilation',
+            command = lambda : self.Compile(),
+        )
+        Compile.place(anchor = 'nw', relx= 0.81, rely = 0.7, relwidth = 0.18, relheight = 0.2) #placing the button
 
     def Refresh(self): #this function refresh the song list
         self.MappedSongs = [Song for Song in DirList('MappedSongs') if Song.endswith('.cmid')] #check the folder for the songs
@@ -171,52 +129,175 @@ class Home(TkPage):
     def Play(self):
         Song = self.ItemList.get('active') #getting the selected song from the list
 
-        for i in range(5): #countdown
-            print(5 - i)
-            Sleep(1)
-
-        with open('MappedSongs/' + Song, 'rb') as InputFile: #opening the compiled midi fil
+        with open('MappedSongs/' + Song, 'rb') as InputFile: #opening the compiled midi file
             File = Load(InputFile)
 
-        RM = Manager()
-        KeyLocks =\
+        NotesFlags =\
         {
-            'C3' : RM.Lock(), 'D3' : RM.Lock(), 'E3' : RM.Lock(), 'F3' : RM.Lock(), 'G3' : RM.Lock(), 'A3' : RM.Lock(), 'B3' : RM.Lock(),
-            'C2' : RM.Lock(), 'D2' : RM.Lock(), 'E2' : RM.Lock(),  'F2' : RM.Lock(), 'G2' : RM.Lock(), 'A2' : RM.Lock(), 'B2' : RM.Lock(),
-            'C1' : RM.Lock(), 'D1' : RM.Lock(), 'E1' : RM.Lock(), 'F1' : RM.Lock(), 'G1' : RM.Lock(), 'A1' : RM.Lock(), 'B1' : RM.Lock(),
-        } #Keyboard Locks
+            'C3' : True, 'D3' : True, 'E3' : True, 'F3' : True, 'G3' : True, 'A3' : True, 'B3' : True,
+            'C2' : True, 'D2' : True, 'E2' : True, 'F2' : True, 'G2' : True, 'A2' : True, 'B2' : True,
+            'C1' : True, 'D1' : True, 'E1' : True, 'F1' : True, 'G1' : True, 'A1' : True, 'B1' : True,
+        }
 
-        Parts = [Process(target = PlayPart, args = (Part, KeyLocks)) for Part in File]
+        self.Stop = False
 
-        for Part in Parts:
-            Part.start()
+        def PlayPart(Part = None): #this (THREADED) function play a single part (track) of the selected song
 
-        for Part in Parts:
-            Part.join()
+            def PlayNote(Sound, Duration): #this function play a single note of the part
+                NotesFlags[Sound] = False #make the resource unavailable for other threads (to avoid deadlock)
+                PressKey(DXCodes[Notes[Sound]]) #press note-corresponding key
+                Sleep(Duration) #wait the duration of the note
+                ReleaseKey(DXCodes[Notes[Sound]]) #release note-corresponding key
+                NotesFlags[Sound] = True #make the resource available for other threads
 
-def Pause(self):
-    pass
+            def PlayChord(Sounds, Duration): # function play a single chord of the part
+                for Sound in Sounds: #for loop  to make every note of the chord unavailable for other threads (to avoid deadlock)
+                    NotesFlags[Sound] = False #lock single resource
+
+                for Sound in Sounds: #for loop to press chord-corresponding keys
+                    PressKey(DXCodes[Notes[Sound]]) #press the note-corresponding key of the chord
+
+                Sleep(Duration) #wait the duration of the notes
+
+                for Sound in Sounds: #for loop to release chord-corresponding keys
+                    ReleaseKey(DXCodes[Notes[Sound]]) #release the note-corresponding key of the chord
+
+                for Sound in Sounds:#for loop to make every note of the chord available for other threads
+                    NotesFlags[Sound] = True #unlock single resource
+
+            Elements = len(Part) #keystrokes to execute
+            Actual = 0 #element counter
+
+            while not self.Stop and Actual < Elements: # while it's not in stop state and the elements played are not max
+                if not self.Pause: #check if not in pause state
+                    if Part[Actual]['Type'] == 'Note': #check if the element is a note
+                        Note = f'{Part[Actual]["Sound"]}{Part[Actual]["Octave"]}' #extract the note
+                        Duration = Part[Actual]['Duration'] #extract the duration
+
+                        if NotesFlags[Note]: #check if the resource is available
+                            PlayNote(Note, Duration) #if the reseourse plays the note at full duration
+                        else: #if the resource is not available at the moment
+                            PartialDuration = Part[Actual]['Duration'] / 10 #duration splitted to check multiple times
+                            Counter = 0 #counter of occupied checks
+
+                            while not NotesFlags[Note] or Counter < 10: #check if the note is still playable
+                                Sleep(PartialDuration) #waiting the partial duration to check availability
+                                Counter += 1 #increasing wasted times
+
+                                if NotesFlags[Note]:
+                                    RemainingDuration = Duration - (PartialDuration * Counter) #calculate remaining duration
+                                    PlayNote(Note, RemainingDuration) #play the note at partial duration
+
+                    elif Part[Actual]['Type'] == 'Chord':
+                        pass
+
+                    elif Part[Actual]['Type'] == 'Rest': #check if the element is a rest
+                        Sleep(Duration) #wait the rest
+
+                    Actual += 1 #increase the played notes
+
+    def PauseSong(self):
+        if self.Pause:
+            self.Pause = False
+        else:
+            self.Pause = True
+
+    def StopSong(self):
+        if self.Stop:
+            if self.Pause:
+                self.Pause = False
+
+
+    def Compile(self):
+        GenshinLyrePlayer.Raise(CompilationScreen.Name)
+
+class CompilationScreen(TkPage):
+    Name = 'Compilation'
+    Font = lambda Size: ('Courier', Size) #font of the page
+
+    def __init__(self, Parent, *args, **kwargs):
+        super().__init__() #constructor of super class
+        self.Songs = [Song for Song in DirList('Songs') if Song.endswith('.mid')] #mappable songs
+        self.MappedSongs = [Song for Song in DirList('MappedSongs') if Song.endswith('.cmid')] #mapped and compiled song
+
+        TopLabel = Label(self, text = 'Compile a Song', font= CompilationScreen.Font(24), bd = 10) #top label with a title for the page
+        TopLabel.place(anchor= 'n', relx= 0.5, rely = 0.015, relwidth = 1, relheight=0.15) #placing the label
+
+        self.ItemList = ListBox(self) #item list of the song
+        for Item in self.Songs: #for loop for every compiled comiled song
+            self.ItemList.insert(self.Songs.index(Item), Item) #indexing the song in the list
+        self.ItemList.place(anchor= 'n', relx= 0.5, rely = 0.2, relwidth = 1, relheight = 0.45) #placing the item list
+
+        self.ApproxValue = IntVar()
+        self.ApproxValue.set(1)
+        self.SingleTracks = IntVar()
+        self.SingleTracks.set(0)
+
+        self.Closest = Radio(self, text = 'Closest Approximation (A# = A, A- = A)', variable = self.ApproxValue, value = 1)
+        self.Closest.place(anchor = 'nw', relx = 0.008, rely = 0.65, relheight = 0.07, relwidth = 0.6)
+        self.Upper = Radio(self, text = 'Upper Approximation (A# = B, A- = A)', variable = self.ApproxValue, value = 0)
+        self.Upper.place(anchor = 'nw', relx = 0.008, rely = 0.71, relheight = 0.07, relwidth = 0.6)
+        self.Split = Check(self, text = 'Split MIDI into single tracks', variable = self.SingleTracks, onvalue = 1, offvalue = 0)
+        self.Split.place(anchor = 'nw', relx = 0.008, rely = 0.77, relheight = 0.07, relwidth = 0.6)
+
+        self.Compilation = Button\
+        (
+            self,
+            text = 'Compile selected song',
+            command = lambda : self.CompileSong()
+        )
+        self.Compilation.place(anchor = 'nw', relx = 0.615, rely = 0.66, relheight = 0.17, relwidth = 0.38)
+
+        self.Back = Button\
+        (
+            self,
+            text = 'Back to Home',
+            command = lambda : self.TurnBack()
+        )
+        self.Back.place(anchor = 'nw', relx = 0.008, rely = 0.84, relheight = 0.07, relwidth = 0.988)
+
+    def CompileSong(self):
+        Song = str(self.ItemList.get('active'))
+        Approximation = bool(self.ApproxValue.get())
+        SplitMIDI = bool(self.SingleTracks.get())
+
+        if Approximation:
+            print('closest approximation')
+            Compile(Song, True, False, SplitMIDI)
+        else:
+            print('upper approximation')
+            Compile(Song, False, True, SplitMIDI)
+
+    def TurnBack(self):
+        GenshinLyrePlayer.Raise(Home.Name)
 
 class GenshinLyrePlayer(App): #class for main app
-    Screen =\
+    Screens =\
     {
-        Home.Name : None
+        CompilationScreen.Name : None,
+        Home.Name : None,
     } #dictionary of all the pages
+
     def __init__(self):
         super().__init__() #constructor of super class
         self.iconphoto(True, Photo(file = 'Res/Logo.png')) #setting icon of the app
 
         if IsAdmin(): #checking if the user has admin rights
             HEIGHT = int(self.winfo_screenheight() * 0.3) #getting the height of screen and dividing by 3 and setting it as height of the window
-            WIDTH = int(HEIGHT * 1.2) #setting the height * 1.2 as width of the window
+            WIDTH = int(HEIGHT * 1.5) #setting the height * 1.2 as width of the window
             Sizes = str(WIDTH) + 'x' + str(HEIGHT) #converting the sizes in a string
             X = int((self.winfo_screenwidth() - WIDTH) / 2) #setting the starting x as center of the screen
             Y = int((self.winfo_screenheight() - HEIGHT) / 2) #setting the starting y as center of the screen
             Pos = '+' + str(X) + '+' + str(Y) #formatting the position
             self.geometry(Sizes + Pos) # setting size and position of the window
-            self.title('GenshinImpactLyreAutoplay') # setting the title of the window
-            GenshinLyrePlayer.Screen[Home.Name] = Home(self) #initializing the home screen
-            GenshinLyrePlayer.Screen[Home.Name].place(relx = 0, rely = 0, relwidth = 1, relheight = 1) #positioning the the home as full window
+            self.title('Genshin Impact Lyre Autoplay') # setting the title of the window
+            GenshinLyrePlayer.Screens[Home.Name] = Home(self) #initializing the home screen
+            GenshinLyrePlayer.Screens[CompilationScreen.Name] = CompilationScreen(self) #initializing the compilation screen
+
+            GenshinLyrePlayer.Raise(Home.Name)
+
+            for Screen in GenshinLyrePlayer.Screens:
+                GenshinLyrePlayer.Screens[Screen].place(anchor= 'n', relx= 0.5, rely = 0, relheight = 1, relwidth = 1)
 
         else: #if the user has no admin rights
             self.AlternativeStart() #show a warning to restart with admin rights
@@ -227,10 +308,18 @@ class GenshinLyrePlayer(App): #class for main app
         WarningBottom = Label(self, text = 'Admin', font = ('Courier',24)) #warning label second line
         Warning.pack() #automatically position the first label
         WarningBottom.pack() #automatically positioning the second label
+        self.update() #update of the screen (needed for position)
+        X = int((self.winfo_screenwidth() - Warning.winfo_width()) / 2) #setting the starting x as center of the screen
+        Y = int((self.winfo_screenheight() - Warning.winfo_height() * 2) / 2) #setting the starting y as center of the screen
+        Pos = '+' + str(X) + '+' + str(Y) #formatting the position
+        self.geometry(Pos) # setting size and position of the window
 
     def Raise(ScreenName = str()): #raising the selected screen to the top
-        GenshinLyrePlayer.Screen[ScreenName].tkaise() #accessing the screen from the dictionary and raising it
+        GenshinLyrePlayer.Screens[ScreenName].tkraise() #accessing the screen from the dictionary and raising it
 
 if __name__ == '__main__':
+
     Application = GenshinLyrePlayer() #app initialization
     Application.mainloop()
+
+    Exit(0)

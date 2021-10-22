@@ -65,7 +65,7 @@ def PressKey(HexKeyCode): #this function send the input of key press
     SendInput(1, Pointer(DirectInput), Sizeof(DirectInput)) #sending the input for pressing the key
 
 
-def ReleaseKey(HexKeyCode):
+def ReleaseKey(HexKeyCode): #this function send the input of key release
     FillInput = ULong(0) #pointer of a number to fill the input
     InputRequest = ReqInput() #normal input request creation
     InputRequest.InputKeyboard = KeyboardInput(0, HexKeyCode, 0x0008 | 0x0002, 0, Pointer(FillInput)) #setting the Keyboard input attribute field properly

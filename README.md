@@ -1,4 +1,4 @@
-# GenshinLyreAutoPlay
+# Genshin Lyre Auto Play
 ### this script will convert and play (almost) every song on the lyre in Performace function of Genshin Impact  
 ---
 ## Disclaimer
@@ -57,20 +57,26 @@ Otherwise we may have to your use of this function
 ######  this script require ***Python*** (to run the scripts) and to be installed and function properly to execute
 ---
 ##  Instructions
-* import your songs (needed to be done once for every song)
+* **IMPORT YOUR SONGS** (needed to be done once for every song)
   * Drop your songs (MIDI files) in `/Songs` folder
-  * the MIDI files will be mapped to Genshin Impact Performace Mode (Lyre) compatible keys sequences
-  * the MIDI files will be translated in C Major in order to remove (most of) the notes alterations (A#, C# ecc.)
-  * all remaining alteration will be fixed (there are 2 method of fixing eventual remaining alteration):
-    * approximation to the closest semitone (A- will be A, F# will be F)(they are different in MIDI files)
-    * approximation to the upper semitone (ex.: C# will be D)
-  * the keys sequence will exported and saved in `/MappedSongs`  
-```
-***IMPORTANT NOTE***
-DO NOT IMPORT ANY COMPILED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND HARM
-YOU, ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED FILE
-```
-* play the imported songs
+  * Open the program
+  * click `Compilation Screen`
+  * choose an approximation (closest or upper) (you may need to try  one or onother depending on the song)
+  * choose if split tracks checking the box <input type="checkbox"> `Split MIDI into single tracks`
+  * click `Compile Selected Song`
+  > NOTE
+  >* the MIDI files will be mapped to Genshin Impact Performace Mode (Lyre) compatible keys sequences
+  >* the MIDI files will be translated in C Major in order to remove (most of) the notes alterations (A#, C# ecc.)
+  >* all remaining alteration will be fixed (there are 2 method of fixing eventual remaining alteration):
+  >   * approximation to the closest semitone (A- will be A, F# will be F)(they are different in MIDI files)
+  >   * approximation to the upper semitone (ex.: C# will be D)
+  >* the keys sequence will exported and saved in `/MappedSongs`
+
+  #### **IMPORTANT NOTE**  
+  >DO NOT IMPORT ANY UNTRUSTED SONG INTO `/MappedSongs` THEY COULD CONTAIN ARBITRARY PROGRAM AND
+  >HARM YOU, ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED FILE  
+
+* **PLAY IMPORTED SONGS**
   * open Genshin Impact
   * go on Performance function
   * start this script
@@ -79,4 +85,9 @@ YOU, ALWAYS COMPILE BY YOURSELF THE SONG AND LET THE PROGRAM LOAD THE GENERATED 
   * return on Genshin Impact (on Performance function)
   * after a few seconds the song will start to play
   * to stop the song while playing press the EscapeButton
-  * enjoy your lyre playing your songs
+  * enjoy your lyre playing your songs  
+  <br>  
+* **PLAY WITH YOUR FRIENDS**
+  * download the same MIDI
+  * split MIDI into single tracks
+  * play together

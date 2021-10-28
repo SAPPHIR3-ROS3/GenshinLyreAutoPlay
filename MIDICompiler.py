@@ -303,6 +303,7 @@ def Compile(FileName = str(), ClosestApprox = True, UpperApprox = False, Split =
     BPMs = GetBPM(Stream)
     OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
     ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
+    ComputedStream = [[Element for Element in Part if not Element == {}] for Part in ComputedStream]
     Octaves = [GetOctaves(SubStream) for SubStream, SubBPM in zip(ComputedStream, BPMs)]
     MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
     CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
@@ -317,18 +318,19 @@ if __name__ == '__main__':
         quit()
 
     if len(Args) == 1:
-        Name = 'Imagine dragons - Radioactive'
-        Stream = ParseMIDI(f'Songs/{Name}.mid')
-        BPMs = GetBPM(Stream)
-        OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
-        ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
-        Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
-        MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
-        CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
-        CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
-        ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
-
-        CompileSong(ShiftedStream, Name, True, False, True)
+        Name = 'Imagine dragons - Radioactive.mid'
+        Compile(Name, True, False, False)
+        # Stream = ParseMIDI(f'Songs/{Name}'+'.mid')
+        # BPMs = GetBPM(Stream)
+        # OctaveRange = [GetOctaveRange(SubStream) for SubStream in Stream]
+        # ComputedStream = [ClassifyElements(SubStream, SubBPM) for SubStream, SubBPM in zip(Stream, BPMs)]
+        # Octaves = [GetOctaves(SubStream) for SubStream in ComputedStream]
+        # MostActiveOctave = [GetMostActiveOctave(SubStream, Octave) for SubStream, Octave in zip(ComputedStream, Octaves)]
+        # CompressedStream = [CutStream(ComputedStream[i], Octaves[i], MostActiveOctave[i]) for i in range(len(ComputedStream))]
+        # CompressedOctaves = [GetOctaves(Part) for Part in CompressedStream]
+        # ShiftedStream = [ShiftOctave(CompressedStream[i], CompressedOctaves[i]) for i in range(len(CompressedStream))]
+        #
+        # CompileSong(ShiftedStream, Name, True, False, True)
 
     else:
         Args = Args[1 :]

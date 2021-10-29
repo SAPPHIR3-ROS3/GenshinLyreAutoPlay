@@ -10,12 +10,11 @@ WarningText = lambda S: f'\33[33m{S}{CEnd}' # function for warnings (yellow text
 OKText = lambda S: f'\33[92m{S}{CEnd}' # function for success operations (green text)
 
 def IsAdmin(): # this function check if the user is admin
-    try: # if the user is on UNIX-like systems
-        from os import getuid as GetUID
-        Admin = (GetUID() == 0) # the SUDO user on UNIX systems is always 0
-    except AttributeError: # if the user is on windows
+    try: # if the user is on
         from ctypes import windll as WinDLL
         Admin = WinDLL.shell32.IsUserAnAdmin() != 0 # the windows API automatic checking
+    except AttributeError: # if the user is on windows
+        return False
     return Admin
 
 def CheckDependencies(): # function to check all the needd dependencies in the script
@@ -30,7 +29,7 @@ def CheckDependencies(): # function to check all the needd dependencies in the s
 
 if __name__ == '__main__':
     ModulesToIstall = CheckDependencies()
-    Sys('cls' if  SysName =='nt' else 'clear')
+    Sys('cls')
 
     if IsAdmin():
         if len(ModulesToIstall) > 0 :
@@ -59,10 +58,6 @@ if __name__ == '__main__':
 
         else:
             print(OKText('All set you are ready to start'))
-
-        print('creating the database the operation may require a few minutes (do not close this window)')
-        Shell('python DBManagement.py -c', shell = True)
-
     else:
         print(ErrorText('you do NOT have Admin privileges please restart this script as Admin'))
 

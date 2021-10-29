@@ -6,3 +6,4 @@ Extra.py
 test*.py*
 *.pyo
 *.exe
+/output/

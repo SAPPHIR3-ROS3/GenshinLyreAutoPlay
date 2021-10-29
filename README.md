@@ -57,6 +57,8 @@ Otherwise we may have to your use of this function
 ######  this script require ***Python*** (to run the scripts) and to be installed and function properly to execute
 ---
 ##  Instructions
+* **INITIAL SETUP** (the script won't run without the setup)
+  * run `Setup.py` and follow the instructions
 * **IMPORT YOUR SONGS** (needed to be done once for every song)
   * Drop your songs (MIDI files) in `/Songs` folder
   * Open the program

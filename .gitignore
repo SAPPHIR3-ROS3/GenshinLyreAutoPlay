@@ -4,3 +4,5 @@
 *.txt
 Extra.py
 test*.py*
+*.pyo
+*.exe
